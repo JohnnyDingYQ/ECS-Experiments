@@ -51,5 +51,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "ECS Experiments.sln"
+    "dotnet.defaultSolution": "ECS-Experiments.sln",
+    "editor.tabSize": 4,
 }
