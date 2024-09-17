@@ -30,6 +30,15 @@ public class CurveTest
     }
 
     [Test]
+    public void DistanceToInterpolation()
+    {
+        Curve curve = Factory.CreateCurve(0, stride, 2 * stride, World.DefaultGameObjectInjectionWorld.EntityManager);
+        float t = curve.DistanceToInterpolation(math.length(stride));
+
+        Assert.True(MyNumerics.IsApproxEqual(t, 0.5f), $"Expected: 0.5f, Actual: {t}");
+    }
+
+    [Test]
     public void MulitpleAddDistance()
     {
         Curve curve = Factory.CreateCurve(0, stride, 3 * stride, World.DefaultGameObjectInjectionWorld.EntityManager);
@@ -48,37 +57,27 @@ public class CurveTest
         Assert.True(MyNumerics.IsApproxEqual(math.length(prevEnd - curve.EndPos), decrement));
     }
 
-    // [Test]
-    // public void SplitSingleSegment()
-    // {
-    //     Curve curve = new(new(0, stride, 2 * stride));
-    //     curve.Split(curve.Length * 0.5f, out Curve left, out Curve right);
+    [Test]
+    public void EvaluatePosition()
+    {
+        float longLength = 100;
+        float3 up = new(0, 0, 1);
+        Curve curve = Factory.CreateCurve(0, up * longLength / 2, up * longLength, World.DefaultGameObjectInjectionWorld.EntityManager);
+        float3 evaluated = curve.EvaluatePosition(1);
 
-    //     Assert.True(MyNumerics.IsApproxEqual(right.Length, left.Length));
-    // }
+        Assert.IsTrue(MyNumerics.IsApproxEqual(1 * up, evaluated), $"Expected {1 * up}, Acutal: {evaluated}");
+    }
 
-    // [Test]
-    // public void SplitLongCurve()
-    // {
-    //     float longLength = 2000;
-    //     float3 up = new(0, 0, 1);
-    //     Curve curve = new(new(0, up * longLength / 2, up * longLength));
-    //     curve.Split(1, out Curve left, out Curve right);
+    [Test]
+    public void GetNearestDistanceLongCurve()
+    {
+        float longLength = 2000;
+        float3 up = new(0, 0, 1);
+        Curve curve = Factory.CreateCurve(0, up * longLength / 2, up * longLength, World.DefaultGameObjectInjectionWorld.EntityManager);
+        curve.GetNearestDistance(new Ray(up + new float3(0, 1, 0), new(0, -1, 0)), out float distanceOnCurve);
 
-    //     Assert.IsTrue(MyNumerics.IsApproxEqual(1, left.Length));
-    //     Assert.IsTrue(MyNumerics.IsApproxEqual(longLength - 1, right.Length));
-    // }
-
-    // [Test]
-    // public void GetNearestDistanceLongCurve()
-    // {
-    //     float longLength = 2000;
-    //     float3 up = new(0, 0, 1);
-    //     Curve curve = new(new(0, up * longLength / 2, up * longLength));
-    //     curve.GetNearestDistance(new Ray(up + new float3(0, 1, 0), new(0, -1, 0)), out float distanceOnCurve);
-
-    //     Assert.IsTrue(MyNumerics.IsApproxEqual(1, distanceOnCurve));
-    // }
+        Assert.IsTrue(MyNumerics.IsApproxEqual(1, distanceOnCurve), $"Expected {1}, Acutal: {distanceOnCurve}");
+    }
 
     // [Test]
     // public void ReverseTest()

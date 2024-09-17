@@ -1,6 +1,7 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 
 public struct EntityStore : IComponentData
 {
@@ -9,12 +10,13 @@ public struct EntityStore : IComponentData
 
 public static class Factory
 {
+    public const int CurveLutSize = 16;
     public static Curve CreateCurve(float3 p0, float3 p1, float3 p2, EntityManager entityManager)
     {
         EntityCommandBuffer ecb = new(Allocator.Temp);
         Entity entity = ecb.CreateEntity();
         var lut = ecb.AddBuffer<DistanceToInterpolationPair>(entity);
-        lut.ResizeUninitialized(15);
+        lut.ResizeUninitialized(CurveLutSize);
 
         BeizerCurve beizerCurve = new()
         {
@@ -27,12 +29,13 @@ public static class Factory
         float3 prevPos = EvaluatePosition(beizerCurve, 0);
         float distance = 0;
         lut[0] = new() { interpolation = 0, distance = 0 };
-        for (float i = 1; i < 15; i++)
+        for (float i = 1; i < CurveLutSize; i++)
         {
-            float interpolation = i / 14;
+            float interpolation = i / (CurveLutSize - 1);
             float3 pos = EvaluatePosition(beizerCurve, interpolation);
             distance += math.length(pos - prevPos);
             lut[(int)i] = new() { interpolation = interpolation, distance = distance };
+            // Debug.Log($"t: {interpolation}, distance: {distance}");
             prevPos = pos;
         }
         beizerCurve.length = distance;
