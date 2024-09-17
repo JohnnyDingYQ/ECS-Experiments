@@ -9,9 +9,10 @@ public class CurveTest
 {
     float3 stride = Constants.MinLaneLength * new float3(1, 0, 0);
 
-    [OneTimeSetUp]
-    public void OneTimeSetUp()
+    [SetUp]
+    public void SetUp()
     {
+        World.DisposeAllWorlds();
         World.DefaultGameObjectInjectionWorld = new("testing");
     }
 
@@ -48,7 +49,8 @@ public class CurveTest
         float3 prevStart = curve.StartPos;
         curve = curve.AddStartDistance(decrement);
         Assert.AreNotEqual(prevStart, curve.StartPos);
-        Assert.True(MyNumerics.IsApproxEqual(math.length(prevStart - curve.StartPos), decrement));
+        Assert.True(MyNumerics.IsApproxEqual(math.length(prevStart - curve.StartPos), decrement),
+            $"Expected: {math.length(prevStart - curve.StartPos)}, Actual: {decrement}");
 
         curve.AddEndDistance(decrement);
         float3 prevEnd = curve.EndPos;
@@ -79,28 +81,29 @@ public class CurveTest
         Assert.IsTrue(MyNumerics.IsApproxEqual(1, distanceOnCurve), $"Expected {1}, Acutal: {distanceOnCurve}");
     }
 
-    // [Test]
-    // public void ReverseTest()
-    // {
-    //     float3 up = new(0, 0, 500);
-    //     float3 right = new(500, 0, 0);
-    //     Curve curve = new(new(0, up, up + right));
-    //     Curve reversed = curve.Duplicate().Offset(1).Reverse();
+    [Test]
+    public void ReverseTest()
+    {
+        float3 up = new(0, 0, 500);
+        float3 right = new(500, 0, 0);
+        Curve curve = Factory.CreateCurve(0, up, up + right, World.DefaultGameObjectInjectionWorld.EntityManager);
+        Curve reversed = curve.Offset(1);
+        reversed.Reverse();
 
-    //     Assert.AreEqual(curve.StartPos + curve.StartNormal, reversed.EndPos);
-    //     Assert.AreEqual(curve.EndPos + curve.EndNormal, reversed.StartPos);
-    // }
+        Assert.AreEqual(curve.StartPos + curve.StartNormal, reversed.EndPos);
+        Assert.AreEqual(curve.EndPos + curve.EndNormal, reversed.StartPos);
+    }
 
-    // [Test]
-    // public void GetNearestDistanceAtEnd()
-    // {
-    //     for (float length = 100; length < 2000; length += 50)
-    //     {
-    //         Curve curve = new(new(0, MyNumerics.Right * length / 2, MyNumerics.Right * length));
-    //         curve.GetNearestDistance(new(new(length - 1, -1, 1), new(0, 1, 0)), out float distA);
-    //         curve.GetNearestDistance(new(new(length - 2, -1, 1), new(0, 1, 0)), out float distB);
+    [Test]
+    public void GetNearestDistanceAtEnd()
+    {
+        for (float length = 100; length < 2000; length += 50)
+        {
+            Curve curve = Factory.CreateCurve(0, MyNumerics.Right * length / 2, MyNumerics.Right * length, World.DefaultGameObjectInjectionWorld.EntityManager);
+            curve.GetNearestDistance(new(new(length - 1, -1, 1), new(0, 1, 0)), out float distA);
+            curve.GetNearestDistance(new(new(length - 2, -1, 1), new(0, 1, 0)), out float distB);
 
-    //         Assert.AreNotEqual(distA, distB);
-    //     }
-    // }
+            Assert.AreNotEqual(distA, distB);
+        }
+    }
 }

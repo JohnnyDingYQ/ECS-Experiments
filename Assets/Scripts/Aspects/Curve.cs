@@ -44,14 +44,16 @@ public readonly partial struct Curve : IAspect
     public float StartT { get => curveData.ValueRO.startT; set => curveData.ValueRW.startT = value; }
     public float EndT { get => curveData.ValueRO.endT; set => curveData.ValueRW.endT = value; }
     public float Length { get => beizerCurve.ValueRO.length - curveData.ValueRO.startDistance - curveData.ValueRO.endDistance; }
-    public float BCurveLength { get => beizerCurve.ValueRO.length; }
+    public float BCurveLength { get => beizerCurve.ValueRO.length; set => beizerCurve.ValueRW.length = value; }
     public float3 P0 { get => beizerCurve.ValueRO.p0; set => beizerCurve.ValueRW.p0 = value; }
     public float3 P1 { get => beizerCurve.ValueRO.p1; set => beizerCurve.ValueRW.p1 = value; }
     public float3 P2 { get => beizerCurve.ValueRO.p2; set => beizerCurve.ValueRW.p2 = value; }
     public float3 P3 { get => beizerCurve.ValueRO.p3; set => beizerCurve.ValueRW.p3 = value; }
 
-    public float3 StartPos { get => EvaluatePosition(StartT); }
-    public float3 EndPos { get => EvaluatePosition(EndT); }
+    public float3 StartPos { get => EvaluatePositionT(StartT); }
+    public float3 EndPos { get => EvaluatePositionT(EndT); }
+    public float3 StartNormal { get => EvaluateNormalT(StartT); }
+    public float3 EndNormal{ get => EvaluateNormalT(EndT); }
 
     public void Add(Curve other)
     {
@@ -67,7 +69,6 @@ public readonly partial struct Curve : IAspect
     {
         float3 prevPos = P0;
         float distance = 0;
-        // lut.GetUnsafePtr
 
         DistanceToInterpolationPair* ptr = (DistanceToInterpolationPair*)lut.GetUnsafePtr();
         ptr[0] = new() { interpolation = 0, distance = 0 };
@@ -80,6 +81,7 @@ public readonly partial struct Curve : IAspect
             // Debug.Log($"t: {interpolation}, distance: {distance}");
             prevPos = pos;
         }
+        BCurveLength = distance;
     }
 
     public Curve AddStartDistance(float distance)
@@ -133,6 +135,12 @@ public readonly partial struct Curve : IAspect
         return mid.interpolation;
     }
 
+    public Curve Offset(float distance)
+    {
+        OffsetDistance += distance;
+        return this;
+    }
+
     float3 EvaluatePositionT(float t)
     {
         return P0 * math.pow(1 - t, 3)
@@ -175,6 +183,7 @@ public readonly partial struct Curve : IAspect
         (P1, P2) = (P2, P1);
         (StartDistance, EndDistance) = (EndDistance, StartDistance);
         OffsetDistance *= -1;
+        CalculateLut();
         StartT = DistanceToInterpolation(StartDistance);
         EndT = DistanceToInterpolation(EndDistance);
     }
