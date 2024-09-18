@@ -53,7 +53,7 @@ public readonly partial struct Curve : IAspect
     public float3 StartPos { get => EvaluatePositionT(StartT); }
     public float3 EndPos { get => EvaluatePositionT(EndT); }
     public float3 StartNormal { get => EvaluateNormalT(StartT); }
-    public float3 EndNormal{ get => EvaluateNormalT(EndT); }
+    public float3 EndNormal { get => EvaluateNormalT(EndT); }
 
     public void Add(Curve other)
     {
@@ -104,36 +104,45 @@ public readonly partial struct Curve : IAspect
 
     public float DistanceToInterpolation(float distance)
     {
+        if (lut.Length < 2)
+            throw new InvalidOperationException("Lookup table must contain at least two elements.");
+
         DistanceToInterpolationPair low = lut[0];
         DistanceToInterpolationPair high = lut[1];
         int index = 2;
-        while (high.distance < distance && index < 15)
+
+        while (high.distance < distance && index < lut.Length)
         {
             low = lut[index - 1];
             high = lut[index];
             index++;
         }
 
-        // Debug.Log($"low: {low.distance}, high: {high.distance}");
-        // Debug.Log($"low: {low.interpolation}, high: {high.interpolation}");
-        // Debug.Log((distance - low.distance) / (high.distance - low.distance));
-        float midT = math.lerp(low.interpolation, high.interpolation, (distance - low.distance) / (high.distance - low.distance));
+        float distanceDelta = high.distance - low.distance;
+        if (math.abs(distanceDelta) < 0.0001f)
+        {
+            return low.interpolation;
+        }
+
+        float midT = math.lerp(low.interpolation, high.interpolation, (distance - low.distance) / distanceDelta);
         float midDistance = low.distance + math.length(EvaluatePositionT(midT) - EvaluatePositionT(low.interpolation));
         DistanceToInterpolationPair mid = new() { distance = midDistance, interpolation = midT };
 
-        int count = 0;
-        while (math.length(mid.distance - distance) > 0.01f && count++ < 10)
+        int maxIterations = 20;
+        while (math.abs(mid.distance - distance) > 0.0001f && maxIterations-- > 0)
         {
             if (mid.distance < distance)
                 low = mid;
             else
                 high = mid;
+
             mid.interpolation = math.lerp(low.interpolation, high.interpolation, 0.5f);
             mid.distance = low.distance + math.length(EvaluatePositionT(mid.interpolation) - EvaluatePositionT(low.interpolation));
         }
 
         return mid.interpolation;
     }
+
 
     public Curve Offset(float distance)
     {
@@ -190,7 +199,9 @@ public readonly partial struct Curve : IAspect
 
     public float GetNearestDistance(Ray ray, out float distanceOnCurve, int resolution = 10)
     {
-        float getNearestPointTolerance = 0.001f;
+        float getNearestPointTolerance = 0.0001f;
+        int maxIterations = 30;
+
         float minDistance = float.MaxValue;
         distanceOnCurve = 0;
         float distanceStep = Length / resolution;
@@ -211,19 +222,19 @@ public readonly partial struct Curve : IAspect
         do
         {
             float mid = (low + high) / 2;
-            if (GetDistanceToCurve(EvaluatePosition(Mathf.Max(0, mid - getNearestPointTolerance)))
-                < GetDistanceToCurve(EvaluatePosition(Mathf.Min(Length, mid + getNearestPointTolerance))))
+            if (GetDistanceToCurve(EvaluatePosition(mid - getNearestPointTolerance))
+                < GetDistanceToCurve(EvaluatePosition(mid + getNearestPointTolerance)))
                 high = mid;
             else
                 low = mid;
-        } while (high - low > getNearestPointTolerance);
+        } while (high - low > getNearestPointTolerance && maxIterations-- > 0);
 
         distanceOnCurve = low;
         return GetDistanceToCurve(EvaluatePosition(low));
 
         float GetDistanceToCurve(float3 pos)
         {
-            return Vector3.Cross(ray.direction, (Vector3)pos - ray.origin).magnitude;
+            return math.length(math.cross(math.normalize(ray.direction), (Vector3)pos - ray.origin));
         }
     }
 }

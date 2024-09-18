@@ -3,12 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-public struct EntityStore : IComponentData
-{
-    public Entity entity;
-}
-
-public static class Factory
+public static partial class Factory
 {
     public const int CurveLutSize = 16;
     public static Curve CreateCurve(float3 p0, float3 p1, float3 p2, EntityManager entityManager)

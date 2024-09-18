@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Unity.Entities;
@@ -95,13 +94,26 @@ public class CurveTest
     }
 
     [Test]
+    public void GetInterpolationAtEnd()
+    {
+        for (float length = 100; length < 2000; length += 50)
+        {
+            Curve curve = Factory.CreateCurve(0, MyNumerics.Right * length / 2, MyNumerics.Right * length, World.DefaultGameObjectInjectionWorld.EntityManager);
+            float t0 = curve.DistanceToInterpolation(length - 1);
+            float t1 = curve.DistanceToInterpolation(length - 2);
+
+            Assert.AreNotEqual(t0, t1);
+        }
+    }
+
+    [Test]
     public void GetNearestDistanceAtEnd()
     {
         for (float length = 100; length < 2000; length += 50)
         {
             Curve curve = Factory.CreateCurve(0, MyNumerics.Right * length / 2, MyNumerics.Right * length, World.DefaultGameObjectInjectionWorld.EntityManager);
             curve.GetNearestDistance(new(new(length - 1, -1, 1), new(0, 1, 0)), out float distA);
-            curve.GetNearestDistance(new(new(length - 2, -1, 1), new(0, 1, 0)), out float distB);
+            curve.GetNearestDistance(new(new(length - 3, -1, 1), new(0, 1, 0)), out float distB);
 
             Assert.AreNotEqual(distA, distB);
         }
